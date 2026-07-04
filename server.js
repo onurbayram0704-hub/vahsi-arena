@@ -26,7 +26,7 @@ const AYARLAR = {
 
   YEM_SAYISI: 900,
   YEM_KUTLE: 1.4,
-  YEM_KAZANC: 0.0001,     // Yem başına TL (ekonomiyi buradan değiştir)
+  YEM_KAZANC: 0.01,       // Değişiklik: Yem başına kazanç 0.01 yapıldı
 
   BOT_SAYISI: 10,          // Arena boş kalmasın diye sunucu botları
   BOT_BASLANGIC: 25,
@@ -402,7 +402,9 @@ setInterval(()=>{
     if(o.hucreler.length){
       o.enYuksek = Math.max(o.enYuksek, toplamKutle(o));
     }else{
-      io.to(sid).emit('oldun', { skor: Math.floor(o.enYuksek) });
+      // Değişiklik: Oyun sonu ulaşılan en yüksek kütle skor olarak ve kazanç/altın olarak gönderiliyor
+      const sonSkor = Math.floor(o.enYuksek);
+      io.to(sid).emit('oldun', { skor: sonSkor, kazanc: sonSkor });
       oyuncular.delete(sid);
     }
   }
