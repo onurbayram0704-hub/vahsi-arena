@@ -9,7 +9,7 @@
     --bg:#0a1410; --panel:#12241c; --accent:#1AD152; --gold:#E8B839; --text:#eaf5ee;
   }
   *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-  body{background:var(--bg);overflow:hidden;color:var(--text)}
+  body{background:var(--bg);overflow:hidden;color:var(--text);user-select:none}
   canvas#game{display:block}
   .overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(4,10,7,.85);backdrop-filter:blur(6px);z-index:10}
@@ -24,8 +24,8 @@
     background:#0b1a13;color:var(--text);font-size:15px;outline:none;margin-bottom:12px;text-align:center}
   .panel input:focus{border-color:var(--accent)}
   .btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--accent);
-    color:#04140a;font-size:16px;font-weight:700;cursor:pointer;transition:transform .1s;margin-bottom:8px}
-  .btn:hover{transform:scale(1.02)}
+    color:#04140a;font-size:16px;font-weight:700;cursor:pointer;transition:transform .1s, background .2s;margin-bottom:8px}
+  .btn:hover{transform:scale(1.02);background:#22e05c}
   .btn.ikincil{background:transparent;border:1.5px solid var(--gold);color:var(--gold)}
   .btn.google{background:#fff;color:#333;display:flex;align-items:center;justify-content:center;gap:10px}
   .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -55,14 +55,12 @@
 </head>
 <body>
 
-<!-- ================= GİRİŞ / BAŞLANGIÇ ================= -->
 <div class="overlay" id="startScreen">
   <div class="panel">
     <div class="marka">BİR OBY BELGESEL YAPIMI</div>
     <h1>VAHŞİ <span>ARENA</span></h1>
     <p class="sub">"Doğada iki kural vardır: ya yersin... ya da yenirsin."</p>
 
-    <!-- Giriş yapılmadan önce -->
     <div id="girisBolumu">
       <button class="btn google" onclick="googleGiris()">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 40.4 44 36 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>
@@ -71,7 +69,6 @@
       <div class="durum-notu">Paranı ve skinlerini hesabına kaydetmek için giriş gerekli.</div>
     </div>
 
-    <!-- Giriş yapıldıktan sonra -->
     <div id="oyunBolumu" style="display:none">
       <div class="kullanici" id="kullaniciAdi"></div>
       <input id="nameInput" maxlength="14" placeholder="Arenadaki adın...">
@@ -87,7 +84,6 @@
   </div>
 </div>
 
-<!-- ================= ÖLÜM EKRANI ================= -->
 <div class="overlay" id="deathScreen">
   <div class="panel">
     <div class="marka">DOĞA ACIMASIZDIR</div>
@@ -99,7 +95,6 @@
   </div>
 </div>
 
-<!-- ================= MAĞAZA ================= -->
 <div class="overlay" id="shopScreen">
   <div class="panel">
     <div class="marka">TAKAS NOKTASI</div>
@@ -112,16 +107,9 @@
 
 <canvas id="game"></canvas>
 
-<!-- Socket.io istemcisi (sunucudan otomatik gelir) -->
 <script src="/socket.io/socket.io.js"></script>
 
 <script type="module">
-/* ############################################################
-   ###   1. ADIM: FIREBASE YAPILANDIRMASI                   ###
-   ###   Firebase konsolundan aldığın config'i aşağıdaki    ###
-   ###   nesnenin İÇİNE yapıştır. Rehberdeki 6. adımda      ###
-   ###   nereden alacağın anlatılıyor.                      ###
-   ############################################################ */
 const firebaseConfig = {
   apiKey: "AIzaSyAXUACKFKR6-VPkLbTU4ge68C1CI9xttYw",
   authDomain: "vahsi-arena.firebaseapp.com",
@@ -141,9 +129,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* ------------------------------------------------------------
-   KULLANICI VERİSİ (Firestore: users/{uid})
------------------------------------------------------------- */
 let kullanici = null;
 let para = 0;
 let sahipliSkinler = new Set();
@@ -172,14 +157,13 @@ async function verileriKaydet(){
     isim: kullanici.displayName || ''
   });
 }
-// Para her yemde değişir; Firestore'u boğmamak için 10 sn'de bir kaydet
 setInterval(()=>{ if(kayitBekliyor) verileriKaydet(); }, 10000);
 
 window.googleGiris = async ()=>{
   try{
     await signInWithPopup(auth, new GoogleAuthProvider());
   }catch(e){
-    alert('Giriş başarısız: '+e.message+'\n\nFirebase config\'ini yapıştırdığından ve Google girişini açtığından emin ol.');
+    alert('Giriş başarısız: '+e.message);
   }
 };
 window.cikisYap = ()=>signOut(auth);
@@ -199,9 +183,6 @@ onAuthStateChanged(auth, async u=>{
   }
 });
 
-/* ------------------------------------------------------------
-   SKİNLER (görselleri istemcide çizilir, seçim sunucuya bildirilir)
------------------------------------------------------------- */
 const SKINLER = [
   { id:'yaprak', ad:'Orman Yaprağı', fiyat:10,  taban:'#3E8E41' },
   { id:'ugur',   ad:'Uğur Böceği',   fiyat:50,  taban:'#D63031' },
@@ -313,29 +294,17 @@ function magazaGuncelle(){
   }
 }
 
-/* ------------------------------------------------------------
-   POWER-UP GÖRSELLERİ (sunucu id gönderir, görsel burada)
------------------------------------------------------------- */
 const POWERUP_GORSEL = {
-  HIZ:     {ad:'Çita Sürati',       ikon:'🐆', renk:'#FFD93B', sure:6000,
-            aciklama:'6 sn boyunca %80 hız.'},
-  KALKAN:  {ad:'Kaplumbağa Kabuğu', ikon:'🐢', renk:'#4DA6FF', sure:8000,
-            aciklama:'8 sn kimse seni yiyemez, dikenler patlatamaz.'},
-  MIKNATIS:{ad:'Karıncayiyen',      ikon:'🐜', renk:'#C77DFF', sure:10000,
-            aciklama:'10 sn yemler sana sürüklenir.'},
-  HAYALET: {ad:'Bukalemun',         ikon:'🦎', renk:'#B8C4D9', sure:7000,
-            aciklama:'7 sn kamuflaj: yiyemezsin, yenmezsin.'},
-  DEV:     {ad:'Mamut Gücü',        ikon:'🦣', renk:'#FF5D5D', sure:0,
-            aciklama:'Anında +%40 kütle.'},
-  GOC:     {ad:'Göç Rüzgarı',       ikon:'🦅', renk:'#3EE0C8', sure:0,
-            aciklama:'Rastgele bir yere ışınlanırsın.'},
-  BAL:     {ad:'Bal Küpü',          ikon:'🍯', renk:'#E8B839', sure:10000,
-            aciklama:'10 sn yemler 2x kütle + 2x para.'},
-  BUZ:     {ad:'Buz Devri',         ikon:'❄️', renk:'#9BE8FF', sure:6000,
-            aciklama:'6 sn yakınındaki rakipler yarı hızda.'},
+  HIZ:     {ad:'Çita Sürati',       ikon:'🐆', renk:'#FFD93B', sure:6000, aciklama:'6 sn boyunca %80 hız.'},
+  KALKAN:  {ad:'Kaplumbağa Kabuğu', ikon:'🐢', renk:'#4DA6FF', sure:8000, aciklama:'8 sn kimse seni yiyemez, dikenler patlatamaz.'},
+  MIKNATIS:{ad:'Karıncayiyen',      ikon:'🐜', renk:'#C77DFF', sure:10000, aciklama:'10 sn yemler sana sürüklenir.'},
+  HAYALET: {ad:'Bukalemun',         ikon:'🦎', renk:'#B8C4D9', sure:7000, aciklama:'7 sn kamuflaj: yiyemezsin, yenmezsin.'},
+  DEV:     {ad:'Mamut Gücü',        ikon:'🦣', renk:'#FF5D5D', sure:0, aciklama:'Anında +%40 kütle.'},
+  GOC:     {ad:'Göç Rüzgarı',       ikon:'🦅', renk:'#3EE0C8', sure:0, aciklama:'Rastgele bir yere ışınlanırsın.'},
+  BAL:     {ad:'Bal Küpü',          ikon:'🍯', renk:'#E8B839', sure:10000, aciklama:'10 sn yemler 2x kütle + 2x para.'},
+  BUZ:     {ad:'Buz Devri',         ikon:'❄️', renk:'#9BE8FF', sure:6000, aciklama:'6 sn yakınındaki rakipler yarı hızda.'},
 };
-const YEM_RENKLERI = ['#8BC34A','#E53935','#FFB300','#7CB342','#FF7043',
-  '#9CCC65','#EF5350','#FFA726','#66BB6A','#D4E157'];
+const YEM_RENKLERI = ['#8BC34A','#E53935','#FFB300','#7CB342','#FF7043', '#9CCC65','#EF5350','#FFA726','#66BB6A','#D4E157'];
 
 document.getElementById('legendBox').innerHTML =
   '<b style="font-size:12.5px">🌿 DOĞANIN GÜÇLERİ</b><br>' +
@@ -345,9 +314,9 @@ document.getElementById('legendBox').innerHTML =
   `<div class="row" style="margin-top:6px"><div class="dot" style="background:#2E5339"></div>
    <div>🌵 <b>Deniz Kestanesi:</b> Ondan büyükken üstüne gelirsen patlarsın!</div></div>`;
 
-/* ------------------------------------------------------------
-   OYUN — sunucuya bağlan, dünyayı çiz
------------------------------------------------------------- */
+/* ============================================================
+   KÜRESEL OYUN DEĞİŞKENLERİ & AKICI KAMERA SİSTEMİ
+   ============================================================ */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 let W=innerWidth, H=innerHeight;
@@ -356,9 +325,14 @@ addEventListener('resize',()=>{W=innerWidth;H=innerHeight;canvas.width=W;canvas.
 
 let soket=null, benimId=null, DUNYA=6000;
 let yemler=[], dikenler=[], durum={oyuncular:[],poweruplar:[],atilan:[]};
-let cizimOyunculari = new Map();   // Yumuşatma için ara pozisyonlar
+let cizimOyunculari = new Map();
 let oyunda=false, enYuksekSkor=0;
 let calilar=[];
+
+// PÜRÜZSÜZ KAMERA LERP DEĞİŞKENLERİ
+let kameraMevcutX = 3000;
+let kameraMevcutY = 3000;
+let kameraMevcutZoom = 1.0;
 
 const fare={x:W/2,y:H/2};
 addEventListener('mousemove',e=>{fare.x=e.clientX;fare.y=e.clientY;});
@@ -378,7 +352,7 @@ addEventListener('keydown',e=>{
 window.oyunaKatil = ()=>{
   if(!kullanici){ alert('Önce Google ile giriş yapmalısın!'); return; }
   if(!soket){
-    soket = io();   // Aynı sunucuya bağlan
+    soket = io();
     soketOlaylari();
   }
   const isim = document.getElementById('nameInput').value.trim()||'İsimsiz Tür';
@@ -390,8 +364,7 @@ function soketOlaylari(){
     benimId=v.id; DUNYA=v.dunya;
     yemler=v.yemler; dikenler=v.dikenler;
     calilar=[];
-    for(let i=0;i<26;i++) calilar.push({x:Math.random()*DUNYA,y:Math.random()*DUNYA,
-      r:90+Math.random()*170, ton:0.03+Math.random()*0.04});
+    for(let i=0;i<26;i++) calilar.push({x:Math.random()*DUNYA,y:Math.random()*DUNYA, r:90+Math.random()*170, ton:0.03+Math.random()*0.04});
     enYuksekSkor=0; oyunda=true;
     document.getElementById('startScreen').style.display='none';
     document.getElementById('deathScreen').style.display='none';
@@ -411,46 +384,46 @@ function soketOlaylari(){
   soket.on('disconnect', ()=>{ oyunda=false; });
 }
 
-/* Fare hedefini sunucuya düzenli gönder */
 setInterval(()=>{
   if(!oyunda||!soket) return;
-  const kamera=kamerayiAl(); if(!kamera) return;
   soket.emit('hedef',{
-    x: kamera.x+(fare.x-W/2)/kamera.zoom,
-    y: kamera.y+(fare.y-H/2)/kamera.zoom
+    x: kameraMevcutX+(fare.x-W/2)/kameraMevcutZoom,
+    y: kameraMevcutY+(fare.y-H/2)/kameraMevcutZoom
   });
 },50);
 
 const yaricap = m=>4*Math.sqrt(m);
 const beniBul = ()=>durum.oyuncular.find(o=>o.id===benimId);
 
-function kamerayiAl(){
+// Kameranın hedef değerlerini hesaplayan fonksiyon
+function kamerayiHesapla(){
   const ben = cizimOyunculari.get(benimId);
   if(!ben||!ben.h.length) return null;
   let x=0,y=0,kutle=0;
   for(const c of ben.h){x+=c.x;y+=c.y;kutle+=c.k;}
   x/=ben.h.length; y/=ben.h.length;
   const r=yaricap(kutle);
-  const oto=Math.max(0.35,Math.min(1.1,60/r+0.35));
+  const oto=Math.max(0.32,Math.min(1.0,65/r+0.35));
   const enUzak=Math.max(W,H)/(DUNYA*0.55);
-  return {x,y,zoom:Math.max(enUzak,oto*zoomKullanici)};
+  return {x, y, zoom:Math.max(enUzak,oto*zoomKullanici)};
 }
 
-/* Sunucudan gelen pozisyonlara yumuşak geçiş (interpolasyon) */
+// Sunucudan gelen sert koordinatların arasını saniyede 60/144 kez doldurarak yağ gibi akıtan sistem
 function yumusat(){
   const gorunen=new Set();
   for(const o of durum.oyuncular){
     gorunen.add(o.id);
     let c=cizimOyunculari.get(o.id);
-    if(!c||c.h.length!==o.h.length){
+    if(!c||c.h.length !== o.h.length){
       c={...o, h:o.h.map(h=>({...h}))};
       cizimOyunculari.set(o.id,c);
     }else{
       c.isim=o.isim;c.renk=o.renk;c.skin=o.skin;c.efekt=o.efekt;
       for(let i=0;i<c.h.length;i++){
-        c.h[i].x+= (o.h[i].x-c.h[i].x)*0.25;
-        c.h[i].y+= (o.h[i].y-c.h[i].y)*0.25;
-        c.h[i].k+= (o.h[i].k-c.h[i].k)*0.25;
+        // LERP: %18 Hızla sunucu pozisyonuna kaydır (bölünme fırlamaları muazzam pürüzsüz görünür)
+        c.h[i].x += (o.h[i].x - c.h[i].x) * 0.18;
+        c.h[i].y += (o.h[i].y - c.h[i].y) * 0.18;
+        c.h[i].k += (o.h[i].k - c.h[i].k) * 0.18;
       }
     }
   }
@@ -459,7 +432,7 @@ function yumusat(){
 }
 
 /* ------------------------------------------------------------
-   ÇİZİM
+   ÇİZİM VE GRAFİK MOTORU
 ------------------------------------------------------------ */
 function hucreCiz(o){
   const efekt=o.efekt||{};
@@ -468,54 +441,74 @@ function hucreCiz(o){
 
   for(const h of o.h){
     const r=yaricap(h.k);
+    if(r <= 0) continue;
+    
     ctx.globalAlpha=hayalet?0.35:1;
+    
+    // Optimizasyonlu Yumuşak Hücre Parıltısı (Glow)
+    if(!hayalet && r > 20) {
+      ctx.save();
+      let golge = ctx.createRadialGradient(h.x, h.y, r * 0.8, h.x, h.y, r + 12);
+      golge.addColorStop(0, skin ? skin.taban + '33' : o.renk + '33');
+      golge.addColorStop(1, 'transparent');
+      ctx.fillStyle = golge;
+      ctx.beginPath(); ctx.arc(h.x, h.y, r + 12, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+
     ctx.beginPath(); ctx.arc(h.x,h.y,r,0,7);
     ctx.fillStyle=skin?skin.taban:o.renk; ctx.fill();
+    
     if(skin&&SKIN_CIZIMLERI[skin.id]){
       ctx.save(); ctx.beginPath(); ctx.arc(h.x,h.y,r,0,7); ctx.clip();
       SKIN_CIZIMLERI[skin.id](ctx,h.x,h.y,r);
       ctx.restore();
     }
+    
     ctx.beginPath(); ctx.arc(h.x,h.y,r,0,7);
-    ctx.lineWidth=Math.max(3,r*0.08);
-    ctx.strokeStyle='rgba(0,0,0,.28)'; ctx.stroke();
+    ctx.lineWidth=Math.max(3,r*0.065);
+    ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.stroke();
+    
     if(kalkan){
-      ctx.beginPath(); ctx.arc(h.x,h.y,r+8+Math.sin(performance.now()/120)*3,0,7);
-      ctx.lineWidth=4; ctx.strokeStyle='#4DA6FF'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(h.x,h.y,r+7+Math.sin(performance.now()/100)*2,0,7);
+      ctx.lineWidth=3.5; ctx.strokeStyle='#4DA6FF'; ctx.stroke();
     }
     if('MIKNATIS' in efekt){
-      ctx.beginPath(); ctx.setLineDash([10,12]);
+      ctx.beginPath(); ctx.setLineDash([8,10]);
       ctx.arc(h.x,h.y,r+220,0,7);
-      ctx.lineWidth=2; ctx.strokeStyle='#C77DFF88'; ctx.stroke();
+      ctx.lineWidth=1.5; ctx.strokeStyle='#C77DFF66'; ctx.stroke();
       ctx.setLineDash([]);
     }
-    if(r>18){
+    if(r>14){
       ctx.fillStyle='#fff';
-      ctx.font=`700 ${Math.max(13,r*0.32)}px Segoe UI`;
+      ctx.font=`700 ${Math.max(12,r*0.3)}px 'Segoe UI', system-ui`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=6;
-      ctx.fillText(o.isim,h.x,h.y-r*0.12);
-      ctx.font=`600 ${Math.max(10,r*0.22)}px Segoe UI`;
-      ctx.fillText(Math.floor(h.k),h.x,h.y+r*0.28);
+      ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=4;
+      ctx.fillText(o.isim,h.x,h.y-r*0.1);
+      ctx.font=`600 ${Math.max(9,r*0.2)}px 'Segoe UI', system-ui`;
+      ctx.fillText(Math.floor(h.k),h.x,h.y+r*0.3);
       ctx.shadowBlur=0;
     }
     ctx.globalAlpha=1;
   }
 }
 
+// Dikenlerin kendi etrafında yavaşça ve organik dönmesini sağlayan grafik güncellemesi
 function dikenCiz(dk){
   ctx.save(); ctx.translate(dk.x,dk.y);
+  // Zaman bazlı sürekli çok hafif dönüş animasyonu
+  ctx.rotate(performance.now() / 2400); 
   ctx.beginPath();
   const dis=16;
   for(let i=0;i<dis*2;i++){
     const a=i*Math.PI/dis;
-    const rr=i%2===0?dk.r*1.28:dk.r*0.88;
+    const rr=i%2===0?dk.r*1.24:dk.r*0.9;
     ctx[i?'lineTo':'moveTo'](Math.cos(a)*rr,Math.sin(a)*rr);
   }
   ctx.closePath();
   ctx.fillStyle='#2E5339'; ctx.fill();
   ctx.lineWidth=3; ctx.strokeStyle='#4A7C59'; ctx.stroke();
-  ctx.beginPath(); ctx.arc(0,0,dk.r*0.5,0,7);
+  ctx.beginPath(); ctx.arc(0,0,dk.r*0.48,0,7);
   ctx.fillStyle='#1E3A28'; ctx.fill();
   ctx.restore();
 }
@@ -526,70 +519,101 @@ function yuvarlakKutu(x,y,w,h,r){
   ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
 }
 
+/* ============================================================
+   ANA RENDER DÖNGÜSÜ (YAĞ GİBİ AKITAN KISIM)
+   ============================================================ */
 function ciz(){
   ctx.fillStyle='#0a1410'; ctx.fillRect(0,0,W,H);
   if(!oyunda) return;
+  
+  // Pozisyonları ara karelerle doldur
   yumusat();
-  const kamera=kamerayiAl(); if(!kamera) return;
+  
+  // Kamera hedeflerini al
+  const kh = kamerayiHesapla();
+  if(kh) {
+    // KAMERA LERP: Kamera X, Y ve Zoom değerlerini hedeflerine süzülerek yanaştır (%8 hız)
+    // Bu sayede bölünmelerde veya ani yön değişimlerinde ekran asla titremez, sinematik akar.
+    kameraMevcutX += (kh.x - kameraMevcutX) * 0.08;
+    kameraMevcutY += (kh.y - kameraMevcutY) * 0.08;
+    kameraMevcutZoom += (kh.zoom - kameraMevcutZoom) * 0.08;
+  }
 
   ctx.save();
-  ctx.translate(W/2,H/2); ctx.scale(kamera.zoom,kamera.zoom);
-  ctx.translate(-kamera.x,-kamera.y);
+  ctx.translate(W/2,H/2); 
+  ctx.scale(kameraMevcutZoom, kameraMevcutZoom);
+  ctx.translate(-kameraMevcutX, -kameraMevcutY);
 
-  const bx=Math.max(0,kamera.x-W/kamera.zoom), by=Math.max(0,kamera.y-H/kamera.zoom);
-  const ex=Math.min(DUNYA,kamera.x+W/kamera.zoom), ey=Math.min(DUNYA,kamera.y+H/kamera.zoom);
+  // Culling (Ekran dışı kırpma) sınırları
+  const bx=Math.max(0,kameraMevcutX-W/kameraMevcutZoom), by=Math.max(0,kameraMevcutY-H/kameraMevcutZoom);
+  const ex=Math.min(DUNYA,kameraMevcutX+W/kameraMevcutZoom), ey=Math.min(DUNYA,kameraMevcutY+H/kameraMevcutZoom);
 
+  // Arka plan çalıları / dekor
   for(const c of calilar){
     if(c.x<bx-300||c.x>ex+300||c.y<by-300||c.y>ey+300) continue;
     ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,7);
     ctx.fillStyle=`rgba(46,110,64,${c.ton})`; ctx.fill();
   }
-  ctx.strokeStyle='rgba(120,200,150,.05)'; ctx.lineWidth=1;
+  
+  // Grid / Izgara çizgileri
+  ctx.strokeStyle='rgba(120,200,150,.04)'; ctx.lineWidth=1;
   for(let x=Math.floor(bx/100)*100;x<=ex;x+=100){
     ctx.beginPath();ctx.moveTo(x,by);ctx.lineTo(x,ey);ctx.stroke();
   }
   for(let y=Math.floor(by/100)*100;y<=ey;y+=100){
     ctx.beginPath();ctx.moveTo(bx,y);ctx.lineTo(ex,y);ctx.stroke();
   }
-  ctx.strokeStyle='#1AD15266'; ctx.lineWidth=6;
+  ctx.strokeStyle='#1AD15255'; ctx.lineWidth=5;
   ctx.strokeRect(0,0,DUNYA,DUNYA);
 
+  // Yemler
   for(const y of yemler){
     if(!y||y.x<bx-20||y.x>ex+20||y.y<by-20||y.y>ey+20) continue;
     ctx.beginPath(); ctx.arc(y.x,y.y,y.r,0,7);
     ctx.fillStyle=YEM_RENKLERI[y.c]||'#8BC34A'; ctx.fill();
   }
+  
+  // Atılan Kütleler
   for(const k of durum.atilan){
+    if(k.x<bx-30||k.x>ex+30||k.y<by-30||k.y>ey+30) continue;
     ctx.beginPath(); ctx.arc(k.x,k.y,yaricap(k.kutle)*0.8,0,7);
     ctx.fillStyle=k.renk; ctx.fill();
   }
+  
+  // Power-up'lar
   for(const p of durum.poweruplar){
+    if(p.x<bx-40||p.x>ex+40||p.y<by-40||p.y>ey+40) continue;
     const g=POWERUP_GORSEL[p.id]; if(!g) continue;
-    const aci=performance.now()/900;
+    const aci=performance.now()/800;
     ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(aci);
     ctx.beginPath();
     for(let i=0;i<4;i++){
       const a=i*Math.PI/2;
-      ctx[i?'lineTo':'moveTo'](Math.cos(a)*27,Math.sin(a)*27);
+      ctx[i?'lineTo':'moveTo'](Math.cos(a)*25,Math.sin(a)*25);
     }
     ctx.closePath();
-    ctx.fillStyle=g.renk+'33'; ctx.fill();
-    ctx.lineWidth=2.5; ctx.strokeStyle=g.renk; ctx.stroke();
+    ctx.fillStyle=g.renk+'28'; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle=g.renk; ctx.stroke();
     ctx.restore();
-    ctx.font='22px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='20px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(g.ikon,p.x,p.y);
   }
+  
+  // Deniz Kestaneleri (Dikenler)
   for(const dk of dikenler){
     if(!dk||dk.x<bx-80||dk.x>ex+80||dk.y<by-80||dk.y>ey+80) continue;
     dikenCiz(dk);
   }
-  // Diğer oyuncular önce, ben en üstte
+  
+  // Oyuncuları çiz (Kendimiz en üstte olacak şekilde)
   for(const [id,o] of cizimOyunculari) if(id!==benimId) hucreCiz(o);
   const ben=cizimOyunculari.get(benimId); if(ben) hucreCiz(ben);
 
   ctx.restore();
-  hudCiz(kamera);
-  miniHaritaCiz(kamera);
+  
+  // HUD ve Minimap çizimi
+  hudCiz();
+  miniHaritaCiz();
 }
 
 function hudCiz(){
@@ -640,7 +664,7 @@ function hudCiz(){
   ctx.textAlign='left';
 }
 
-function miniHaritaCiz(kamera){
+function miniHaritaCiz(){
   const boyut=170,pad=16;
   const mx=W-boyut-pad,my=H-boyut-pad;
   const olcek=boyut/DUNYA;
@@ -660,10 +684,10 @@ function miniHaritaCiz(kamera){
     ctx.beginPath(); ctx.arc(mx+p.x*olcek,my+p.y*olcek,3,0,7); ctx.fill();
     ctx.globalAlpha=1;
   }
-  const vw=(W/kamera.zoom)*olcek, vh=(H/kamera.zoom)*olcek;
+  const vw=(W/kameraMevcutZoom)*olcek, vh=(H/kameraMevcutZoom)*olcek;
   ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=1;
-  ctx.strokeRect(mx+kamera.x*olcek-vw/2,my+kamera.y*olcek-vh/2,vw,vh);
-  const px=mx+kamera.x*olcek, py=my+kamera.y*olcek;
+  ctx.strokeRect(mx+kameraMevcutX*olcek-vw/2,my+kameraMevcutY*olcek-vh/2,vw,vh);
+  const px=mx+kameraMevcutX*olcek, py=my+kameraMevcutY*olcek;
   ctx.beginPath(); ctx.arc(px,py,4.5,0,7); ctx.fillStyle='#1AD152'; ctx.fill();
   ctx.beginPath(); ctx.arc(px,py,7,0,7);
   ctx.strokeStyle='#1AD15288'; ctx.lineWidth=1.5; ctx.stroke();
@@ -671,6 +695,7 @@ function miniHaritaCiz(kamera){
   ctx.fillText('BÖLGE HARİTASI',mx+4,my-10);
 }
 
+// Tarayıcının yenileme hızına (60Hz, 144Hz, 240Hz) tam senkronize render döngüsü
 (function dongu(){ ciz(); requestAnimationFrame(dongu); })();
 </script>
 </body>
