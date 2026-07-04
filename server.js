@@ -47,7 +47,7 @@ const AYARLAR = {
   DIKEN_SAYISI: 22,
   DIKEN_YARICAP: 42,
 
-  HIZ_KATSAYISI: 2.5,
+  HIZ_KATSAYISI: 1,
   TICK_MS: 50,             // Sunucu saniyede 20 kez hesap yapar
 };
 
