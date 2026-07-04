@@ -26,12 +26,12 @@ const AYARLAR = {
 
   YEM_SAYISI: 900,
   YEM_KUTLE: 1.4,
-  YEM_KAZANC: 0.01,     // Yem başına TL (ekonomiyi buradan değiştir)
+  YEM_KAZANC: 0.0001,     // Yem başına TL (ekonomiyi buradan değiştir)
 
   BOT_SAYISI: 10,          // Arena boş kalmasın diye sunucu botları
-  BOT_BASLANGIC: 65,
+  BOT_BASLANGIC: 25,
 
-  BASLANGIC_KUTLE: 75,
+  BASLANGIC_KUTLE: 25,
   YEME_ORANI: 1.15,
 
   BOLUNME_MIN: 36,
@@ -241,8 +241,7 @@ function varligiGuncelle(varlik, socketId, herkes){
       if(d<r){
         const kat = bal?2:1;
         h.kutle += AYARLAR.YEM_KUTLE*kat;
-        if(socketId){
-    io.to(socketId).emit("kazanc", AYARLAR.YEM_KUTLE * kat);
+        if(socketId) io.to(socketId).emit('kazanc', AYARLAR.YEM_KAZANC*kat);
         yemler[i]=yemOlustur();
         io.emit('yem', {i, y:yemler[i]});
       }
