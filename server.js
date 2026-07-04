@@ -26,7 +26,7 @@ const AYARLAR = {
 
   YEM_SAYISI: 900,
   YEM_KUTLE: 1.4,
-  YEM_KAZANC: 0.01,       // Değişiklik: Yem başına kazanç 0.01 yapıldı
+  YEM_KAZANC: 0.1,       // Değişiklik: Yem başına kazanç 0.01 yapıldı
 
   BOT_SAYISI: 10,          // Arena boş kalmasın diye sunucu botları
   BOT_BASLANGIC: 25,
@@ -44,7 +44,7 @@ const AYARLAR = {
   POWERUP_MAX: 14,
   POWERUP_SIKLIK: 3200,
 
-  DIKEN_SAYISI: 22,
+  DIKEN_SAYISI: 10,
   DIKEN_YARICAP: 42,
 
   HIZ_KATSAYISI: 1,
