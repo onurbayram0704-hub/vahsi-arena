@@ -89,7 +89,7 @@
     <div class="marka">DOĞA ACIMASIZDIR</div>
     <h1>Besin Zincirine <span>Karıştın</span></h1>
     <div class="big-score" id="finalScore">0</div>
-    <div class="para-satiri">Cüzdanın: <b id="finalPara">₺0</b></div>
+    <div class="para-satiri">Kazanılan Altın: <b id="finalPara" style="color:#1AD152">₺0</b></div>
     <button class="btn" onclick="oyunaKatil()">YENİDEN DOĞ</button>
     <button class="btn ikincil" onclick="magazaAc()">🛖 MAĞAZA</button>
   </div>
@@ -241,7 +241,7 @@ const SKIN_CIZIMLERI = {
   },
 };
 
-const paraYaz = p=>'₺'+p.toFixed(4).replace('.',',');
+const paraYaz = p=>'₺'+p.toFixed(2).replace('.',',');
 
 window.magazaAc = ()=>{
   document.getElementById('shopScreen').style.display='flex';
@@ -315,7 +315,7 @@ document.getElementById('legendBox').innerHTML =
    <div>🌵 <b>Deniz Kestanesi:</b> Ondan büyükken üstüne gelirsen patlarsın!</div></div>`;
 
 /* ============================================================
-   KÜRESEL OYUN DEĞİŞKENLERİ & AKICI KAMERA SİSTEMİ
+   KÜRESEL OYUN DEĞİŞKENLERİ & AMORTİSÖRLÜ KAMERA SİSTEMİ
    ============================================================ */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -329,18 +329,24 @@ let cizimOyunculari = new Map();
 let oyunda=false, enYuksekSkor=0;
 let calilar=[];
 
-// PÜRÜZSÜZ KAMERA LERP DEĞİŞKENLERİ
+// AMORTİSÖRLÜ KAMERA VE ZOOM DEĞİŞKENLERİ
 let kameraMevcutX = 3000;
 let kameraMevcutY = 3000;
 let kameraMevcutZoom = 1.0;
+let zoomKullaniciHedef = 1.0;  // Tekerlek ile gitmek istenen yumuşak hedef
+let zoomKullanici = 1.0;       // O hedefe doğru süzülen anlık çarpan
 
 const fare={x:W/2,y:H/2};
 addEventListener('mousemove',e=>{fare.x=e.clientX;fare.y=e.clientY;});
 
-let zoomKullanici=1;
+// Tamamen pürüzsüzleştirilmiş tekerlek zoom dinleyicisi
 addEventListener('wheel',e=>{
   e.preventDefault();
-  zoomKullanici=Math.max(0.55,Math.min(1.7,zoomKullanici*(e.deltaY>0?0.9:1.11)));
+  if(e.deltaY > 0){
+    zoomKullaniciHedef = Math.max(0.55, zoomKullaniciHedef * 0.90);
+  } else {
+    zoomKullaniciHedef = Math.min(1.7, zoomKullaniciHedef * 1.11);
+  }
 },{passive:false});
 
 addEventListener('keydown',e=>{
@@ -376,9 +382,11 @@ function soketOlaylari(){
   soket.on('kazanc', miktar=>{ para+=miktar; kayitBekliyor=true; });
   soket.on('oldun', v=>{
     oyunda=false;
+    // Sunucudan gelen kütle kazancı cüzdana ekleniyor
+    if(v.kazanc) para += v.kazanc; 
     rekor=Math.max(rekor,v.skor); verileriKaydet();
     document.getElementById('finalScore').textContent=v.skor;
-    document.getElementById('finalPara').textContent=paraYaz(para);
+    document.getElementById('finalPara').textContent="+₺" + v.skor + " Altın eklendi!";
     document.getElementById('deathScreen').style.display='flex';
   });
   soket.on('disconnect', ()=>{ oyunda=false; });
@@ -393,9 +401,7 @@ setInterval(()=>{
 },50);
 
 const yaricap = m=>4*Math.sqrt(m);
-const beniBul = ()=>durum.oyuncular.find(o=>o.id===benimId);
 
-// Kameranın hedef değerlerini hesaplayan fonksiyon
 function kamerayiHesapla(){
   const ben = cizimOyunculari.get(benimId);
   if(!ben||!ben.h.length) return null;
@@ -408,7 +414,6 @@ function kamerayiHesapla(){
   return {x, y, zoom:Math.max(enUzak,oto*zoomKullanici)};
 }
 
-// Sunucudan gelen sert koordinatların arasını saniyede 60/144 kez doldurarak yağ gibi akıtan sistem
 function yumusat(){
   const gorunen=new Set();
   for(const o of durum.oyuncular){
@@ -420,7 +425,6 @@ function yumusat(){
     }else{
       c.isim=o.isim;c.renk=o.renk;c.skin=o.skin;c.efekt=o.efekt;
       for(let i=0;i<c.h.length;i++){
-        // LERP: %18 Hızla sunucu pozisyonuna kaydır (bölünme fırlamaları muazzam pürüzsüz görünür)
         c.h[i].x += (o.h[i].x - c.h[i].x) * 0.18;
         c.h[i].y += (o.h[i].y - c.h[i].y) * 0.18;
         c.h[i].k += (o.h[i].k - c.h[i].k) * 0.18;
@@ -445,7 +449,6 @@ function hucreCiz(o){
     
     ctx.globalAlpha=hayalet?0.35:1;
     
-    // Optimizasyonlu Yumuşak Hücre Parıltısı (Glow)
     if(!hayalet && r > 20) {
       ctx.save();
       let golge = ctx.createRadialGradient(h.x, h.y, r * 0.8, h.x, h.y, r + 12);
@@ -493,10 +496,8 @@ function hucreCiz(o){
   }
 }
 
-// Dikenlerin kendi etrafında yavaşça ve organik dönmesini sağlayan grafik güncellemesi
 function dikenCiz(dk){
   ctx.save(); ctx.translate(dk.x,dk.y);
-  // Zaman bazlı sürekli çok hafif dönüş animasyonu
   ctx.rotate(performance.now() / 2400); 
   ctx.beginPath();
   const dis=16;
@@ -520,23 +521,25 @@ function yuvarlakKutu(x,y,w,h,r){
 }
 
 /* ============================================================
-   ANA RENDER DÖNGÜSÜ (YAĞ GİBİ AKITAN KISIM)
+   ANA RENDER DÖNGÜSÜ
    ============================================================ */
 function ciz(){
   ctx.fillStyle='#0a1410'; ctx.fillRect(0,0,W,H);
   if(!oyunda) return;
   
-  // Pozisyonları ara karelerle doldur
   yumusat();
   
-  // Kamera hedeflerini al
+  // 1) KULLANICININ TEKERLEK ZOOM DEĞERİNİ YUMUŞATARAK YAKLAŞTIR (%8 Hız)
+  zoomKullanici += (zoomKullaniciHedef - zoomKullanici) * 0.08;
+
   const kh = kamerayiHesapla();
   if(kh) {
-    // KAMERA LERP: Kamera X, Y ve Zoom değerlerini hedeflerine süzülerek yanaştır (%8 hız)
-    // Bu sayede bölünmelerde veya ani yön değişimlerinde ekran asla titremez, sinematik akar.
+    // 2) POZİSYON AMORTİSÖRÜ (%8 Süzülme Hızı)
     kameraMevcutX += (kh.x - kameraMevcutX) * 0.08;
     kameraMevcutY += (kh.y - kameraMevcutY) * 0.08;
-    kameraMevcutZoom += (kh.zoom - kameraMevcutZoom) * 0.08;
+    
+    // 3) ZOOM SINEMATİK AMORTİSÖRÜ (%4 Yaylanma Hızı — Geçişleri Kusursuz Yapar)
+    kameraMevcutZoom += (kh.zoom - kameraMevcutZoom) * 0.04;
   }
 
   ctx.save();
@@ -544,18 +547,15 @@ function ciz(){
   ctx.scale(kameraMevcutZoom, kameraMevcutZoom);
   ctx.translate(-kameraMevcutX, -kameraMevcutY);
 
-  // Culling (Ekran dışı kırpma) sınırları
   const bx=Math.max(0,kameraMevcutX-W/kameraMevcutZoom), by=Math.max(0,kameraMevcutY-H/kameraMevcutZoom);
   const ex=Math.min(DUNYA,kameraMevcutX+W/kameraMevcutZoom), ey=Math.min(DUNYA,kameraMevcutY+H/kameraMevcutZoom);
 
-  // Arka plan çalıları / dekor
   for(const c of calilar){
     if(c.x<bx-300||c.x>ex+300||c.y<by-300||c.y>ey+300) continue;
     ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,7);
     ctx.fillStyle=`rgba(46,110,64,${c.ton})`; ctx.fill();
   }
   
-  // Grid / Izgara çizgileri
   ctx.strokeStyle='rgba(120,200,150,.04)'; ctx.lineWidth=1;
   for(let x=Math.floor(bx/100)*100;x<=ex;x+=100){
     ctx.beginPath();ctx.moveTo(x,by);ctx.lineTo(x,ey);ctx.stroke();
@@ -566,21 +566,18 @@ function ciz(){
   ctx.strokeStyle='#1AD15255'; ctx.lineWidth=5;
   ctx.strokeRect(0,0,DUNYA,DUNYA);
 
-  // Yemler
   for(const y of yemler){
     if(!y||y.x<bx-20||y.x>ex+20||y.y<by-20||y.y>ey+20) continue;
     ctx.beginPath(); ctx.arc(y.x,y.y,y.r,0,7);
     ctx.fillStyle=YEM_RENKLERI[y.c]||'#8BC34A'; ctx.fill();
   }
   
-  // Atılan Kütleler
   for(const k of durum.atilan){
     if(k.x<bx-30||k.x>ex+30||k.y<by-30||k.y>ey+30) continue;
     ctx.beginPath(); ctx.arc(k.x,k.y,yaricap(k.kutle)*0.8,0,7);
     ctx.fillStyle=k.renk; ctx.fill();
   }
   
-  // Power-up'lar
   for(const p of durum.poweruplar){
     if(p.x<bx-40||p.x>ex+40||p.y<by-40||p.y>ey+40) continue;
     const g=POWERUP_GORSEL[p.id]; if(!g) continue;
@@ -599,19 +596,16 @@ function ciz(){
     ctx.fillText(g.ikon,p.x,p.y);
   }
   
-  // Deniz Kestaneleri (Dikenler)
   for(const dk of dikenler){
     if(!dk||dk.x<bx-80||dk.x>ex+80||dk.y<by-80||dk.y>ey+80) continue;
     dikenCiz(dk);
   }
   
-  // Oyuncuları çiz (Kendimiz en üstte olacak şekilde)
   for(const [id,o] of cizimOyunculari) if(id!==benimId) hucreCiz(o);
   const ben=cizimOyunculari.get(benimId); if(ben) hucreCiz(ben);
 
   ctx.restore();
   
-  // HUD ve Minimap çizimi
   hudCiz();
   miniHaritaCiz();
 }
@@ -646,7 +640,7 @@ function hudCiz(){
     ctx.textAlign='left';
   });
 
-  const efekt=(beniBul()||{}).efekt||{};
+  const efekt=(durum.oyuncular.find(o=>o.id===benimId)||{}).efekt||{};
   const aktifler=Object.keys(efekt).filter(id=>POWERUP_GORSEL[id]&&POWERUP_GORSEL[id].sure>0);
   aktifler.forEach((id,i)=>{
     const g=POWERUP_GORSEL[id];
@@ -690,12 +684,9 @@ function miniHaritaCiz(){
   const px=mx+kameraMevcutX*olcek, py=my+kameraMevcutY*olcek;
   ctx.beginPath(); ctx.arc(px,py,4.5,0,7); ctx.fillStyle='#1AD152'; ctx.fill();
   ctx.beginPath(); ctx.arc(px,py,7,0,7);
-  ctx.strokeStyle='#1AD15288'; ctx.lineWidth=1.5; ctx.stroke();
-  ctx.fillStyle='#8fc9a4'; ctx.font='700 10px Segoe UI'; ctx.textAlign='left';
-  ctx.fillText('BÖLGE HARİTASI',mx+4,my-10);
+  ctx.strokeStyle='#1AD15288'; ctx.lineWidth=1.5; stroke();
 }
 
-// Tarayıcının yenileme hızına (60Hz, 144Hz, 240Hz) tam senkronize render döngüsü
 (function dongu(){ ciz(); requestAnimationFrame(dongu); })();
 </script>
 </body>
