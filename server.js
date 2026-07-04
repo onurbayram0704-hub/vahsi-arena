@@ -25,7 +25,7 @@ const AYARLAR = {
   DUNYA: 6000,
 
   YEM_SAYISI: 900,
-  YEM_KUTLE: 1.4,
+  YEM_KUTLE: 5,
   YEM_KAZANC: 0.1,       // Değişiklik: Yem başına kazanç 0.01 yapıldı
 
   BOT_SAYISI: 10,          // Arena boş kalmasın diye sunucu botları
